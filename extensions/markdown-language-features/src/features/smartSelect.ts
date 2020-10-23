@@ -37,11 +37,11 @@ export default class MarkdownSmartSelect implements vscode.SelectionRangeProvide
 			return undefined;
 		}
 
-		let parentRange = headerRange ? headerRange : createBlockRange(blockTokens.shift(), document);
+		let parentRange = headerRange ? headerRange : createBlockRange(document, blockTokens.shift());
 		let currentRange: vscode.SelectionRange | undefined;
 
 		for (const token of blockTokens) {
-			currentRange = createBlockRange(token, document, parentRange);
+			currentRange = createBlockRange(document, token, parentRange);
 			if (currentRange && currentRange.parent && parentRange) {
 				parentRange = currentRange;
 			} else if (currentRange) {
@@ -69,7 +69,7 @@ export default class MarkdownSmartSelect implements vscode.SelectionRangeProvide
 		let currentRange: vscode.SelectionRange | undefined;
 
 		for (let i = 0; i < headers.length; i++) {
-			currentRange = createHeaderRange(headers[i], i === headers.length - 1, headerInfo.headerOnThisLine, parentRange, getFirstChildHeader(document, headers[i], toc));
+			currentRange = createHeaderRange(i === headers.length - 1, headerInfo.headerOnThisLine, headers[i], parentRange, getFirstChildHeader(document, headers[i], toc));
 			if (currentRange && currentRange.parent) {
 				parentRange = currentRange;
 			}
@@ -116,7 +116,7 @@ function isBlockElement(token: Token): boolean {
 	return !['list_item_close', 'paragraph_close', 'bullet_list_close', 'inline', 'heading_close', 'heading_open'].includes(token.type);
 }
 
-function createHeaderRange(header: TocEntry | undefined, isClosestHeaderToPosition: boolean, onHeaderLine: boolean, parent?: vscode.SelectionRange, childStart?: vscode.Position | undefined): vscode.SelectionRange | undefined {
+function createHeaderRange(isClosestHeaderToPosition: boolean, onHeaderLine: boolean, header?: TocEntry, parent?: vscode.SelectionRange, childStart?: vscode.Position): vscode.SelectionRange | undefined {
 	if (header) {
 		let contentRange = new vscode.Range(header.location.range.start.translate(1), header.location.range.end);
 		let headerPlusContentRange = header.location.range;
@@ -143,7 +143,7 @@ function createHeaderRange(header: TocEntry | undefined, isClosestHeaderToPositi
 	}
 }
 
-function createBlockRange(block: Token | undefined, document: vscode.TextDocument, parent?: vscode.SelectionRange): vscode.SelectionRange | undefined {
+function createBlockRange(document: vscode.TextDocument, block?: Token, parent?: vscode.SelectionRange): vscode.SelectionRange | undefined {
 	if (block) {
 		if (block.type === 'fence') {
 			return createFencedRange(block, document, parent);
