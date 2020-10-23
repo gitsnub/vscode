@@ -65,57 +65,27 @@ export default class MarkdownSmartSelect implements vscode.SelectionRangeProvide
 
 		let headers = headerInfo.headers;
 
-		if (headers.length === 0) {
-			return undefined;
-		}
-
-		let parentHeader = headers.shift();
 		let parentRange: vscode.SelectionRange | undefined;
 		let currentRange: vscode.SelectionRange | undefined;
 
-		if (headers.length === 0 && parentHeader) {
-			if (headerInfo.headerOnThisLine) {
-				let child = getFirstChildHeader(document, parentHeader, toc);
+		for (let i = 0; i < headers.length; i++) {
+			if (headerInfo.headerOnThisLine && i === headers.length - 1) {
+				let child = getFirstChildHeader(document, headers[i], toc);
 				if (child) {
-					parentRange = new vscode.SelectionRange(parentHeader.location.range.with(undefined, child), new vscode.SelectionRange(parentHeader.location.range));
+					currentRange = new vscode.SelectionRange(headers[i].location.range.with(undefined, child), new vscode.SelectionRange(headers[i].location.range, parentRange));
 				} else {
-					parentRange = new vscode.SelectionRange(parentHeader.location.range);
+					currentRange = new vscode.SelectionRange(headers[i].location.range, parentRange);
 				}
+			} else if (i === headers.length - 1) {
+				currentRange = createHeaderRange(headers[i], parentRange, getFirstChildHeader(document, headers[i], toc));
 			} else {
-				parentRange = createHeaderRange(parentHeader, undefined, getFirstChildHeader(document, parentHeader, toc));
-			}
-		} else {
-			parentRange = createHeaderRange(parentHeader);
-		}
-
-		let index = 0;
-		for (const header of headers) {
-			if (parentRange) {
-				if (parentRange.range.contains(header.location.range)) {
-					if (headerInfo.headerOnThisLine && index === headers.length - 1) {
-						let child = getFirstChildHeader(document, header, toc);
-						if (child) {
-							currentRange = new vscode.SelectionRange(header.location.range.with(undefined, child), new vscode.SelectionRange(header.location.range, parentRange));
-						} else {
-							currentRange = new vscode.SelectionRange(header.location.range, parentRange);
-						}
-					} else if (index === headers.length - 1) {
-						currentRange = createHeaderRange(header, parentRange, getFirstChildHeader(document, header, toc));
-					} else {
-						currentRange = createHeaderRange(header, parentRange);
-					}
-				}
+				currentRange = createHeaderRange(headers[i], parentRange);
 			}
 			if (currentRange && currentRange.parent) {
 				parentRange = currentRange;
 			}
-			index++;
 		}
-		if (currentRange) {
-			return currentRange;
-		} else {
-			return parentRange;
-		}
+		return currentRange;
 	}
 }
 
